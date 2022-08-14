@@ -1,6 +1,4 @@
-from asyncio import constants
-import * from constants
-
+# characters.py
 
 class Character: 
     
@@ -10,7 +8,7 @@ class Character:
     def printInfo(self):
         healthText = BUTTON_FONT.render(
             f'HP: {playerStats["health"]}', 1, BLACK)
-        constants.window.blit(healthText, (self.col * box_size + (box_size/8), self.row * box_size - 2*(box_size/3)))
+        Game.window.blit(healthText, (self.col * box_size + (box_size/8), self.row * box_size - 2*(box_size/3)))
     pass
     
     pass

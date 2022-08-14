@@ -1,9 +1,13 @@
+# maps.py 
+
 import pygame
 
 class Map():
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, map_path):
+        self._map_path = map_path
+        # self._map_width = map_width
+        # self._map_height = map_height
         
     pass
 
