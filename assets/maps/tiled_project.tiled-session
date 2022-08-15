@@ -6,22 +6,30 @@
     "activeFile": "map_files/overworld_1.tmx",
     "automapping.whileDrawing": true,
     "expandedProjectPaths": [
-        "tilesets/overworld",
-        "map_files",
-        "tilesets",
         ".",
-        "overworld_ts"
+        "map_files",
+        "overworld_ts",
+        "tilesets/overworld",
+        "tilesets"
     ],
     "fileStates": {
         ":/automap-tiles.tsx": {
             "scaleInDock": 1
         },
+        "map_files/BigOverworld.tmx": {
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 616,
+                "y": 488
+            }
+        },
         "map_files/overworld_1.tmx": {
             "scale": 2.52,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 124.2063492063492,
-                "y": 132.14285714285714
+                "x": 183.73015873015873,
+                "y": 133.73015873015873
             }
         },
         "overworld_ts/overworld.tsx": {
@@ -41,22 +49,25 @@
             "scaleInEditor": 2.53
         }
     },
-    "last.exportedFilePath": "/Users/sam.carroll/Desktop/Carroll Tile RPG/assets/maps/tilesets/overworld",
+    "last.exportedFilePath": "V:/Temp/Carroll Tile RPG/assets/maps/map_files",
     "last.imagePath": "/Users/sam.carroll/Desktop/Carroll Tile RPG/assets/maps/overworld_ts",
     "lastUsedTilesetExportFilter": "JSON tileset files (*.tsj *.json)",
     "map.height": 64,
+    "map.lastUsedExportFilter": "JSON map files (*.tmj *.json)",
     "map.lastUsedFormat": "tmx",
     "map.tileHeight": 16,
     "map.tileWidth": 16,
     "map.width": 64,
     "openFiles": [
         "tilesets/overworld/overworld.tsx",
-        "map_files/overworld_1.tmx"
+        "map_files/overworld_1.tmx",
+        "map_files/BigOverworld.tmx"
     ],
     "project": "tiled_project.tiled-project",
     "property.type": "int",
     "recentFiles": [
         "tilesets/overworld/overworld.tsx",
+        "map_files/BigOverworld.tmx",
         "map_files/overworld_1.tmx",
         "overworld_ts/overworld.tsx",
         "overworld_ts/overworld_1.tmx"
