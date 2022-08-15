@@ -1,6 +1,5 @@
 # v4
 
-from email.mime import image
 import pygame
 import os
 import json
