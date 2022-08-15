@@ -13,6 +13,9 @@
         "tilesets"
     ],
     "fileStates": {
+        "://automap-tiles.tsx": {
+            "scaleInDock": 1
+        },
         ":/automap-tiles.tsx": {
             "scaleInDock": 1
         },
