@@ -3,9 +3,12 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "",
+    "activeFile": "map_files/overworld_1.tmx",
     "automapping.whileDrawing": true,
     "expandedProjectPaths": [
+        "tilesets/overworld",
+        "map_files",
+        "tilesets",
         ".",
         "overworld_ts"
     ],
@@ -17,8 +20,8 @@
             "scale": 2.52,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 118.25396825396825,
-                "y": 120.23809523809524
+                "x": 124.2063492063492,
+                "y": 132.14285714285714
             }
         },
         "overworld_ts/overworld.tsx": {
@@ -32,21 +35,28 @@
                 "x": 120.19793072424653,
                 "y": 120.19793072424653
             }
+        },
+        "tilesets/overworld/overworld.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 2.53
         }
     },
     "last.exportedFilePath": "/Users/sam.carroll/Desktop/Carroll Tile RPG/assets/maps/tilesets/overworld",
     "last.imagePath": "/Users/sam.carroll/Desktop/Carroll Tile RPG/assets/maps/overworld_ts",
     "lastUsedTilesetExportFilter": "JSON tileset files (*.tsj *.json)",
-    "map.height": 15,
+    "map.height": 64,
     "map.lastUsedFormat": "tmx",
     "map.tileHeight": 16,
     "map.tileWidth": 16,
-    "map.width": 15,
+    "map.width": 64,
     "openFiles": [
+        "tilesets/overworld/overworld.tsx",
+        "map_files/overworld_1.tmx"
     ],
     "project": "tiled_project.tiled-project",
     "property.type": "int",
     "recentFiles": [
+        "tilesets/overworld/overworld.tsx",
         "map_files/overworld_1.tmx",
         "overworld_ts/overworld.tsx",
         "overworld_ts/overworld_1.tmx"
