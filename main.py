@@ -5,6 +5,7 @@ import os
 import json
 import sys
 
+
 class Game():
     def __init__(self):
         self.setup_pygame()
@@ -22,33 +23,56 @@ class Game():
         self.window_size = (infoObject.current_w // 2,
                             infoObject.current_h // 2)
         self.window = pygame.display.set_mode(
-            (self.window_size[0], self.window_size[1]), pygame.RESIZABLE, 32)
+            (self.window_size[0], self.window_size[1]), pygame.SCALED | pygame.RESIZABLE, 32)
         pygame.display.set_caption('Monster Hunter \'86')
+
         self.clock = pygame.time.Clock()
         self.running = True
 
+    def update(self):
+
+        self.map.update()
+        self.player.update()
+        # for monster in self.monsters:
+        #     monster.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.VIDEORESIZE:
+                self.window = pygame.display.set_mode(
+                    event.size, pygame.SCALED | pygame.RESIZABLE, 32)
+                self.window_size = event.size
+                pygame.display.update()
+
+    def draw(self):
+        self.map.draw(self.render_surface)
+        self.player.draw(self.render_surface)
+        # for monster in self.monsters:
+        #     monster.draw(self.render_surface)
+
+    def get_surf_point(self):
+        return (
+            self.window_size[0]//2 - self.player.get_x(),
+            self.window_size[1]//2 - self.player.get_y()
+        )
+
     def main_loop(self):
+
+        self.render_surface = pygame.Surface(
+            self.map.get_pixel_size_tuple(), pygame.SRCALPHA, 32).convert_alpha()
+
         while self.running:
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
+            self.update()
+            self.draw()
 
-                # if event.type == pygame.KEYDOWN:
-                #     if event.key == pygame.K_LEFT or event.key == ord('a'):
-                #         dude.move("left")
-                #     if event.key == pygame.K_RIGHT or event.key == ord('d'):
-                #         dude.move("right")
-                #     if event.key == pygame.K_UP or event.key == ord('w'):
-                #         dude.move("up")
-                #     if event.key == pygame.K_DOWN or event.key == ord('s'):
-                #         dude.move("down")
+            self.window.blit(pygame.transform.scale(
+                self.render_surface,
+                self.map.get_scaled_pixel_size_tuple()
+            ), (0, 0))
 
-            self.map.draw(self.window)
-            # self.player.draw(self.window)
-            # for monster in self.monsters:
-            #     monster.draw(self.window)
             pygame.display.update()
             self.clock.tick(30)
 
@@ -102,14 +126,35 @@ class Map():
                 local_tile_id = map_tile_id - tileset_tuple[0]
                 return tileset_tuple[1].get_tile_surface(local_tile_id)
 
-    def draw(self, window):
+    def update(self):
+        pass
+
+    def draw(self, surface):
         for row_tiles in self.map:
             for col_tile in row_tiles:
                 col_tile.draw(
-                    window,
+                    surface,
                     self.map_data["tilewidth"],
                     self.map_data["tileheight"]
                 )
+
+    def get_size_tuple(self):
+        return (
+            self.map_data["width"],
+            self.map_data["height"]
+        )
+
+    def get_pixel_size_tuple(self):
+        return (
+            self.map_data["width"] * self.map_data["tilewidth"],
+            self.map_data["height"] * self.map_data["tilewidth"]
+        )
+
+    def get_scaled_pixel_size_tuple(self):
+        return (
+            self.map_data["width"] * self.map_data["tilewidth"] * 4,
+            self.map_data["height"] * self.map_data["tilewidth"] * 4
+        )
 
     def __repr__(self) -> str:
         return "Map<{}, {}w, {}h>".format(self.name, self.map_data["width"], self.map_data["height"])
@@ -130,9 +175,9 @@ class Tile():
             (image_surface, layer_name)
         )
 
-    def draw(self, window, width, height):
+    def draw(self, surface, width, height):
         for layer in self.layers:
-            window.blit(
+            surface.blit(
                 layer[0],
                 (self.col * width, self.row * height)
             )
@@ -144,12 +189,34 @@ class Tile():
 
 class Character():
     def __init__(self, name) -> None:
+        self.x = 5
+        self.y = 5
         self.name = name
         self.max_health = 100
         self.health = self.max_health
         self.level = 1
 
-    def draw(self):
+    def get_x(self):
+        return self.x
+    
+    def get_y(self):
+        return self.y
+
+    def move(self, shift):
+        self.x += shift[0]
+        self.y += shift[1]
+
+    def update(self):
+        pass
+
+    def draw(self, surface):
+
+        pygame.draw.rect(surface, pygame.Color(
+            'red'), pygame.Rect(self.x, self.y, 16, 16))
+        # surface.blit(
+        #     pygame.Rect(0,0,16,16),
+        #     (self.x * 16, self.y * 16)
+        # )
         pass
 
     def __repr__(self):
@@ -162,6 +229,31 @@ class Player(Character):
 
         print(self)
         pass
+
+    def update(self):
+        super().update()
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            self.move((-1, 0))
+        if keys[pygame.K_RIGHT]:
+            self.move((1, 0))
+        if keys[pygame.K_UP]:
+            self.move((0, -1))
+        if keys[pygame.K_DOWN]:
+            self.move((0, 1))
+
+
+        # if event.type == pygame.KEYDOWN:
+        #     if event.key == pygame.K_LEFT or event.key == ord('a'):
+        #         dude.move("left")
+        #     if event.key == pygame.K_RIGHT or event.key == ord('d'):
+        #         dude.move("right")
+        #     if event.key == pygame.K_UP or event.key == ord('w'):
+        #         dude.move("up")
+        #     if event.key == pygame.K_DOWN or event.key == ord('s'):
+        #         dude.move("down")
+
 
     pass
 
@@ -176,7 +268,6 @@ class Tileset():
         self.sheetpath = os.path.join(os.path.dirname(
             self.filepath), self.tileset_data["image"])
         self.sheet = pygame.image.load(self.sheetpath).convert_alpha()
-
 
         self.tile_collisions = []
         self.load_collisions()
