@@ -203,9 +203,9 @@ class Tileset():
         )
 
     def get_tile_surface(self, local_tile_id):
-        rectangle = self.get_tile_rect(local_tile_id)
+        tile_slice = self.get_tile_rect(local_tile_id)
         # From https://www.pygame.org/wiki/Spritesheet
-        rect = pygame.Rect(rectangle)
+        rect = pygame.Rect(tile_slice)
         image = pygame.Surface(rect.size, pygame.SRCALPHA, 32).convert_alpha()
         image.blit(self.sheet, (0, 0), rect)
         # if colorkey is not None:
