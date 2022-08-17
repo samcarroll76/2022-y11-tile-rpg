@@ -1,4 +1,5 @@
 # v4
+from datetime import datetime
 from threading import local
 import pygame
 import os
@@ -358,8 +359,8 @@ class Character():
 
         pygame.draw.rect(surface, self.unique_colour, self.bounding_rect)
 
-        # for collide_block in self._collidelist:
-        #     pygame.draw.rect(surface, Utils.CLR_RED, collide_block)
+        for collide_block in self._collidelist:
+            pygame.draw.rect(surface, pygame.Color(255,0,0,128), collide_block)
 
         # surface.blit(
         #     pygame.Rect(0,0,16,16),
@@ -438,8 +439,11 @@ class Player(Character):
 class Monster(Character):
     def __init__(self, name, x, y):
         super().__init__(name, x, y)
-        self.movement_speed *= 0.7
+        self.movement_speed *= 0.5
         self.movement_algorithm = "bearing_vector"
+        date_time_obj = datetime.now()
+        time_obj = date_time_obj.time()
+        self.timer = time_obj.second()
 
     def auto_move(self, map, player_loc):
         vec_to_player = pygame.math.Vector2(
@@ -460,10 +464,31 @@ class Monster(Character):
             # random movement
             pass
 
+    def rand_move(self, map):
+        possible_dir = [
+            (self.bounding_rect.x - 1, self.bounding_rect.y),
+            (self.bounding_rect.x - 1, self.bounding_rect.y - 1),
+            (self.bounding_rect.x, self.bounding_rect.y - 1),
+            (self.bounding_rect.x + 1, self.bounding_rect.y - 1),
+            (self.bounding_rect.x + 1, self.bounding_rect.y),
+            (self.bounding_rect.x + 1, self.bounding_rect.y + 1),
+            (self.bounding_rect.x, self.bounding_rect.y + 1),
+            (self.bounding_rect.x - 1, self.bounding_rect.y + 1)
+        ]
+        index = random.randint(0,7)
+        print(index)
+        rand_vec = pygame.math.Vector2(possible_dir[index])
+        if rand_vec.length() <= self.sight_range:
+            self.move_vector(map, rand_vec)
+
+        pass
+
+
     def update(self, map, player_loc):
         super().update(map)
 
         self.auto_move(map, player_loc)
+        self.rand_move(map)
 
 
 class Tileset():
