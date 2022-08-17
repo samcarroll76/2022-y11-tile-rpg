@@ -5,6 +5,7 @@ import os
 import json
 import sys
 import random
+import math
 
 
 class Game():
@@ -58,7 +59,7 @@ class Game():
                 pygame.display.update()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_j:
-                    self.player.attack_nearest()
+                    self.player.attack_nearest(self.monsters)
                 if event.key == pygame.K_l:
                     self.player.take_damage(50)
                 if event.key == pygame.K_r and self.player.is_dead():
@@ -308,9 +309,9 @@ class Character():
         # self.height = 16
         self.movement_speed = 2
 
-        self.sight_range = 4 * self.bounding_rect.w
+        self.sight_range = 7 * self.bounding_rect.w
         self.cooldown_length = 1500
-        self.cooldown_timer = 0
+        self.last_attack = pygame.time.get_ticks()
         self.weapon_id = 0
 
         self.unique_colour = Utils.get_hexcolor(name + str(x) + str(y))
@@ -370,13 +371,10 @@ class Character():
     def distance_to(self, other):
         dist_x = self.bounding_rect.x - other.bounding_rect.x
         dist_y = self.bounding_rect.y - other.bounding_rect.y
-        return (dist_x ^ 2, dist_y ^ 2) ^ 0.5
-
-    def start_cooldown():
-        pass
+        return math.sqrt((dist_x ** 2 + dist_y ** 2)) 
 
     def cooldown_expired(self):
-        if self.cooldown_timer >= self.cooldown_length:
+        if self.last_attack >= pygame.time.get_ticks() - 1500:
             return True
         return False
 
@@ -389,17 +387,32 @@ class Character():
     def get_centre(self):
         return (self.bounding_rect.x + self.bounding_rect.w // 2, self.bounding_rect.y + self.bounding_rect.h//2)
 
-    def attack_nearest(self):
-        pass
+    def attack_nearest(self, monsters):
+        monster_dist = {}
+        for monster in monsters:
+            dist = self.distance_to(monster)
+            monster_dist[monster] = dist
+        print(monster_dist)
+        closest_monster = min(monster_dist, key=monster_dist.get) 
+        self.attack(closest_monster) 
+         
 
     def attack(self, target):
         if self.distance_to(target) <= self.bounding_rect.w*2:
-            if self.cooldown_expired():
-                target.take_damage(target, (self.get_weapon().get_damage()))
+            # if self.cooldown_expired():
+            target.take_damage(target, (self.get_weapon().get_damage()))
 
-    def take_damage(self, damage):
-        self.health = Utils.limit((self.health - damage), 0, self.max_health)
+    def take_damage(self, target, damage):
+        target.health = Utils.limit((target.health - damage), 0, target.max_health)
+        print(target.health)
         self.is_dead()
+        self.remove_monster()
+        
+    def remove_monster(self):
+        if self.is_dead():
+            print("dead")
+        
+        
 
     def is_dead(self):
         if self.health <= 0:
@@ -438,7 +451,7 @@ class Player(Character):
 class Monster(Character):
     def __init__(self, name, x, y):
         super().__init__(name, x, y)
-        self.movement_speed *= 0.5
+        self.movement_speed *= 0.8
         
         self.current_vec = pygame.math.Vector2()
         self.last_dir_change = pygame.time.get_ticks()
@@ -456,37 +469,37 @@ class Monster(Character):
             # head toward player
             self.move_vector(map, vec_to_player)
         else:
-            self.rand_move(map)
+            # self.rand_move(map)
             pass
 
-    def rand_move(self, map):
+    # def rand_move(self, map):
 
-        self.move_vector(map, self.current_vec)
+    #     self.move_vector(map, self.current_vec)
 
-        if self.last_dir_change >= pygame.time.get_ticks() - 500:
-            return
+    #     if self.last_dir_change >= pygame.time.get_ticks() - 500:
+    #         return
         
-        self.last_dir_change = pygame.time.get_ticks()
+    #     self.last_dir_change = pygame.time.get_ticks()
 
-        possible_dir = [
-            (-1, -1),
-            (-1, 0),
-            (-1, 1),
-            (0, -1),
-            (0, 1),
-            (1, -1),
-            (1, 0),
-            (1, 1)
-        ]
-        index = random.randint(0,7)
-        self.current_vec = pygame.math.Vector2(possible_dir[index])
+    #     possible_dir = [
+    #         (-1, -1),
+    #         (-1, 0),
+    #         (-1, 1),
+    #         (0, -1),
+    #         (0, 1),
+    #         (1, -1),
+    #         (1, 0),
+    #         (1, 1)
+    #     ]
+    #     index = random.randint(0,7)
+    #     self.current_vec = pygame.math.Vector2(possible_dir[index])
 
 
     def update(self, map, player_loc):
         super().update(map)
 
         self.auto_move(map, player_loc)
-        self.rand_move(map)
+        # self.rand_move(map)
 
 
 class Tileset():
