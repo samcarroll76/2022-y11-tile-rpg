@@ -1,5 +1,4 @@
 # v4
-
 import pygame
 import os
 import json
@@ -11,7 +10,7 @@ class Game():
         self.setup_pygame()
 
     def start(self):
-        self.map = Map("Overworld_1")
+        self.map = Map("overworld_1")
         self.player = Player("Danny", 0, 0)
         self.monsters = []
 
@@ -22,15 +21,19 @@ class Game():
         infoObject = pygame.display.Info()
         self.window_size = (infoObject.current_w // 2,
                             infoObject.current_h // 2)
-        
+
         self.scale_factor = 4
-        
+
+        Utils.load_fonts()
+
         self.window = pygame.display.set_mode(
             (self.window_size[0], self.window_size[1]), pygame.SCALED | pygame.RESIZABLE, 32)
         pygame.display.set_caption('Monster Hunter \'86')
 
         self.clock = pygame.time.Clock()
+
         self.running = True
+        self.should_restart = False
 
     def update(self):
 
@@ -48,23 +51,48 @@ class Game():
                     event.size, pygame.SCALED | pygame.RESIZABLE, 32)
                 self.window_size = event.size
                 pygame.display.update()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_j:
+                    self.player.attack()
+                if event.key == pygame.K_l:
+                    self.player.take_damage(50)
+                if event.key == pygame.K_r and self.player.is_dead():
+                    self.restart()
 
     def draw(self):
         self.map.draw(self.render_surface)
         self.player.draw(self.render_surface)
+
+        self.window.fill((0, 0, 0))
+        self.window.blit(pygame.transform.scale(
+            self.render_surface,
+            self.map.get_scaled_pixel_size_tuple(self.scale_factor)
+        ), (self.get_surf_point()))
+
         # for monster in self.monsters:
         #     monster.draw(self.render_surface)
+
+        if self.player.is_dead():
+            self.window.fill((255, 255, 255))
+            die_text = Utils.SIZE_40_FONT.render(
+                'YOU DIED! \n Restart the game to play again!', True, Utils.CLR_RED)
+            textRect = die_text.get_rect()
+            textRect.center = (self.window_size[0] // 2,
+                               self.window_size[1] // 2)
+
+            self.window.blit(die_text, textRect)
 
     def get_surf_point(self):
         return (
             Utils.limit(
-                self.window_size[0]//2 - self.player.get_x() * self.scale_factor,
-                self.window_size[0] - self.map.get_scaled_pixel_size_tuple(self.scale_factor)[0], 0), 
+                self.window_size[0]//2 -
+                self.player.get_x() * self.scale_factor,
+                self.window_size[0] - self.map.get_scaled_pixel_size_tuple(self.scale_factor)[0], 0),
             Utils.limit(
-                self.window_size[1]//2 - self.player.get_y() * self.scale_factor,
-                self.window_size[1] - self.map.get_scaled_pixel_size_tuple(self.scale_factor)[1], 0), 
-            )
-        
+                self.window_size[1]//2 -
+                self.player.get_y() * self.scale_factor,
+                self.window_size[1] - self.map.get_scaled_pixel_size_tuple(self.scale_factor)[1], 0),
+        )
 
     def main_loop(self):
 
@@ -75,16 +103,18 @@ class Game():
 
             self.update()
             self.draw()
-            
-            print(self.get_surf_point())
-            self.window.fill((0,0,0))
-            self.window.blit(pygame.transform.scale(
-                self.render_surface,
-                self.map.get_scaled_pixel_size_tuple(self.scale_factor)
-            ), (self.get_surf_point()))
 
             pygame.display.update()
             self.clock.tick(30)
+
+        if (self.should_restart):
+            self.should_restart = False
+            self.running = True
+            self.start()
+
+    def restart(self):
+        self.running = False
+        self.should_restart = True
 
     def __repr__(self):
         return "Game<{}, {}, {}m>".format(self.map, self.player, len(self.enemies))
@@ -197,7 +227,6 @@ class Tile():
                 layer[0],
                 (self.col * width, self.row * height)
             )
-        pass
 
     def __repr__(self):
         return "Tile<r{}, c{}, {}l>".format(self.row, self.col, len(self.layers))
@@ -214,17 +243,19 @@ class Character():
         self.width = 16
         self.height = 16
         self.pixel_move = 1
+        self.cooldown_length = 1500
+        self.cooldown_timer = 0
 
     def get_x(self):
         return self.x
-    
+
     def get_y(self):
         return self.y
 
     def move(self, shift, map):
         self.x += shift[0]
         self.y += shift[1]
-        
+
         self.x = Utils.limit(self.x, 0, map.get_pixel_width() - self.width)
         self.y = Utils.limit(self.y, 0, map.get_pixel_height() - self.height)
 
@@ -240,6 +271,34 @@ class Character():
         #     (self.x * 16, self.y * 16)
         # )
         pass
+
+    def distanceto(self, other):
+        dist_x = self.x - other.x
+        dist_y = self.y - other.y
+        return (dist_x ^ 2, dist_y ^ 2) ^ 0.5
+
+    def start_cooldown():
+        pass
+
+    def cooldown_expired(self):
+        if self.cooldown_timer >= self.cooldown_length:
+            return True
+        return False
+
+    def attack(self, target, damage):
+        if self.distanceto(target) <= self.width*2:
+            if self.cooldown_expired():
+                target.take_damage(target, (self.weapon.get_damage()*damage))
+
+    def take_damage(self, damage):
+        self.health = Utils.limit((self.health - damage), 0, self.max_health)
+        self.is_dead()
+
+    def is_dead(self):
+        print(self.health)
+        if self.health <= 0:
+            return True
+        return False
 
     def __repr__(self):
         return type(self).__name__ + "<{}, {}HP, LVL{}>".format(self.name, self.health, self.level)
@@ -272,8 +331,6 @@ class Player(Character):
             self.move((0, -1), map)
         if keys[pygame.K_DOWN]:
             self.move((0, 1), map)
-      
-
 
         # if event.type == pygame.KEYDOWN:
         #     if event.key == pygame.K_LEFT or event.key == ord('a'):
@@ -285,8 +342,12 @@ class Player(Character):
         #     if event.key == pygame.K_DOWN or event.key == ord('s'):
         #         dude.move("down")
 
-
     pass
+
+
+class Monster(Character):
+    def __init__(self, name, x, y):
+        super().__init__(name, x, y)
 
 
 class Tileset():
@@ -345,6 +406,16 @@ class Utils():
     ASSET_FOLDER = os.path.join(DIRPATH, 'assets/')
     MAPS_FOLDER = os.path.join(ASSET_FOLDER, 'mapping/maps/')
     TILES_FOLDER = os.path.join(ASSET_FOLDER, 'mapping/tilesets/')
+
+    SIZE_40_FONT = None
+
+    def load_fonts():
+        Utils.SIZE_40_FONT = pygame.font.Font(
+            pygame.font.get_default_font(), 40)
+
+    CLR_RED = (255, 0, 0)
+    CLR_BLUE = (0, 0, 255)
+    CLR_GREEN = (0, 255, 0)
 
     def limit(n, min_n, max_n):
         return max(min(max_n, n), min_n)
