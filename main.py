@@ -3,6 +3,7 @@ import pygame
 import os
 import json
 import sys
+import random
 
 
 class Game():
@@ -11,8 +12,11 @@ class Game():
 
     def start(self):
         self.map = Map("overworld_1")
-        self.player = Player("Danny", 0, 0)
-        self.monsters = []
+        self.player = Player("Danny", 10, 10)
+        self.monsters = [
+            Monster("jerry", 150, 100),
+            Monster("jerry2", 100, 150)
+        ]
 
         self.main_loop()
 
@@ -39,8 +43,8 @@ class Game():
 
         self.map.update()
         self.player.update(self.map)
-        # for monster in self.monsters:
-        #     monster.update()
+        for monster in self.monsters:
+            monster.update(self.map, self.player.get_loc())
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -53,7 +57,7 @@ class Game():
                 pygame.display.update()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_j:
-                    self.player.attack()
+                    self.player.attack_nearest()
                 if event.key == pygame.K_l:
                     self.player.take_damage(50)
                 if event.key == pygame.K_r and self.player.is_dead():
@@ -62,15 +66,15 @@ class Game():
     def draw(self):
         self.map.draw(self.render_surface)
         self.player.draw(self.render_surface)
+        for monster in self.monsters:
+            monster.draw(self.render_surface)
 
-        self.window.fill((0, 0, 0))
+        self.window.fill((50, 50, 50))
         self.window.blit(pygame.transform.scale(
             self.render_surface,
             self.map.get_scaled_pixel_size_tuple(self.scale_factor)
         ), (self.get_surf_point()))
 
-        # for monster in self.monsters:
-        #     monster.draw(self.render_surface)
 
         if self.player.is_dead():
             self.window.fill((255, 255, 255))
@@ -232,7 +236,25 @@ class Tile():
         return "Tile<r{}, c{}, {}l>".format(self.row, self.col, len(self.layers))
 
 
+class Weapon():
+
+    def __init__(self, name, damage):
+        self.name = name
+        self.damage = damage
+        # self.image = image
+
+    def get_damage(self):
+        return self.damage
+
+
 class Character():
+
+    WEAPON_LIST = [
+        Weapon("Hand", 5),
+        Weapon("Stick", 7),
+        Weapon("Stick v2", 9)
+    ]
+
     def __init__(self, name, x, y) -> None:
         self.x = x
         self.y = y
@@ -242,9 +264,16 @@ class Character():
         self.level = 1
         self.width = 16
         self.height = 16
-        self.pixel_move = 1
+        self.movement_speed = 2
+
+        self.sight_range = 4 * self.width
         self.cooldown_length = 1500
         self.cooldown_timer = 0
+        self.weapon_id = 0
+
+        self.unique_colour = Utils.get_hexcolor(name + str(x) + str(y))
+
+        print(self)
 
     def get_x(self):
         return self.x
@@ -252,27 +281,38 @@ class Character():
     def get_y(self):
         return self.y
 
-    def move(self, shift, map):
-        self.x += shift[0]
-        self.y += shift[1]
+    def move_vector(self, map, shift_vector):
+        if shift_vector.length() <= 0:
+            return
 
-        self.x = Utils.limit(self.x, 0, map.get_pixel_width() - self.width)
-        self.y = Utils.limit(self.y, 0, map.get_pixel_height() - self.height)
+        shift_vector.scale_to_length(self.movement_speed)
+
+        self.x += shift_vector.x
+        self.y += shift_vector.y
+
+        self.x = round(Utils.limit(
+            self.x, 0, map.get_pixel_width() - self.width), 1)
+        self.y = round(Utils.limit(
+            self.y, 0, map.get_pixel_height() - self.height), 1)
+
+    def move(self, shift, map):
+        self.move_vector(map, pygame.math.Vector2(shift))
 
     def update(self, map):
+        print(self.name, " is at ", self.get_loc())
         pass
 
     def draw(self, surface):
 
-        pygame.draw.rect(surface, pygame.Color(
-            'red'), pygame.Rect(self.x, self.y, self.width, self.height))
+        pygame.draw.rect(surface, self.unique_colour, pygame.Rect(
+            self.x, self.y, self.width, self.height))
         # surface.blit(
         #     pygame.Rect(0,0,16,16),
         #     (self.x * 16, self.y * 16)
         # )
         pass
 
-    def distanceto(self, other):
+    def distance_to(self, other):
         dist_x = self.x - other.x
         dist_y = self.y - other.y
         return (dist_x ^ 2, dist_y ^ 2) ^ 0.5
@@ -285,17 +325,25 @@ class Character():
             return True
         return False
 
-    def attack(self, target, damage):
-        if self.distanceto(target) <= self.width*2:
+    def get_weapon(self):
+        return self.WEAPON_LIST[self.weapon_id]
+
+    def get_loc(self):
+        return (self.x, self.y)
+
+    def attack_nearest(self):
+        pass
+
+    def attack(self, target):
+        if self.distance_to(target) <= self.width*2:
             if self.cooldown_expired():
-                target.take_damage(target, (self.weapon.get_damage()*damage))
+                target.take_damage(target, (self.get_weapon().get_damage()))
 
     def take_damage(self, damage):
         self.health = Utils.limit((self.health - damage), 0, self.max_health)
         self.is_dead()
 
     def is_dead(self):
-        print(self.health)
         if self.health <= 0:
             return True
         return False
@@ -305,42 +353,26 @@ class Character():
 
 
 class Player(Character):
+
     def __init__(self, name, x, y) -> None:
         super().__init__(name, x, y)
-
-        print(self)
         pass
 
     def update(self, map):
         super().update(map)
 
         keys = pygame.key.get_pressed()
-        # if keys[pygame.K_LEFT] and keys[pygame.K_DOWN]:
-        #     self.move((-0.75, 0.75), map)
-        # if keys[pygame.K_LEFT] and keys[pygame.K_UP]:
-        #     self.move((-0.75, -0.75), map)
-        # if keys[pygame.K_RIGHT] and keys[pygame.K_DOWN]:
-        #     self.move((0.75, 0.75), map)
-        # if keys[pygame.K_DOWN] and keys[pygame.K_UP]:
-        #     self.move((0.75, -0.75), map)
-        if keys[pygame.K_LEFT]:
-            self.move((-1, 0), map)
-        if keys[pygame.K_RIGHT]:
-            self.move((1, 0), map)
-        if keys[pygame.K_UP]:
-            self.move((0, -1), map)
-        if keys[pygame.K_DOWN]:
-            self.move((0, 1), map)
 
-        # if event.type == pygame.KEYDOWN:
-        #     if event.key == pygame.K_LEFT or event.key == ord('a'):
-        #         dude.move("left")
-        #     if event.key == pygame.K_RIGHT or event.key == ord('d'):
-        #         dude.move("right")
-        #     if event.key == pygame.K_UP or event.key == ord('w'):
-        #         dude.move("up")
-        #     if event.key == pygame.K_DOWN or event.key == ord('s'):
-        #         dude.move("down")
+        move_vec = pygame.math.Vector2()
+        if keys[pygame.K_LEFT]:
+            move_vec.x -= 1
+        if keys[pygame.K_RIGHT]:
+            move_vec.x += 1
+        if keys[pygame.K_UP]:
+            move_vec.y -= 1
+        if keys[pygame.K_DOWN]:
+            move_vec.y += 1
+        self.move_vector(map, move_vec)
 
     pass
 
@@ -348,6 +380,32 @@ class Player(Character):
 class Monster(Character):
     def __init__(self, name, x, y):
         super().__init__(name, x, y)
+        self.movement_speed *= 0.7
+        self.movement_algorithm = "bearing_vector"
+
+    def auto_move(self, map, player_loc):
+        vec_to_player = pygame.math.Vector2(
+            player_loc[0] - self.x,
+            player_loc[1] - self.y
+        )
+
+        if vec_to_player.length() <= 1:
+            return
+
+        print(vec_to_player, " from ", self.name)
+
+        if vec_to_player.length() <= self.sight_range:
+            # head toward player
+            if self.movement_algorithm == "bearing_vector":
+                self.move_vector(map, vec_to_player)
+        else:
+            # random movement
+            pass
+
+    def update(self, map, player_loc):
+        super().update(map)
+
+        self.auto_move(map, player_loc)
 
 
 class Tileset():
@@ -419,6 +477,13 @@ class Utils():
 
     def limit(n, min_n, max_n):
         return max(min(max_n, n), min_n)
+
+    def get_randint_255():
+        return random.randint(0, 255)
+
+    def get_hexcolor(input):
+        random.seed(input)
+        return pygame.Color(Utils.get_randint_255(), Utils.get_randint_255(), Utils.get_randint_255())
 
 
 game = Game()
