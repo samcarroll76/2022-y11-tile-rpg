@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.9" tiledversion="1.9.1" name="overworld" tilewidth="16" tileheight="16" tilecount="189" columns="21">
+ <editorsettings>
+  <export target="overworld.tsj" format="json"/>
+ </editorsettings>
  <image source="overworld.png" width="336" height="144"/>
  <tile id="0">
   <properties>
@@ -213,17 +216,17 @@
  </tile>
  <tile id="42">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="43">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="44">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="45">
@@ -843,17 +846,17 @@
  </tile>
  <tile id="168">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="169">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="170">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="171" probability="0.2">
