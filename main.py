@@ -11,8 +11,8 @@ class Game():
         self.setup_pygame()
 
     def start(self):
-        self.map = Map("overworld_1")
-        self.player = Player("Danny")
+        self.map = Map("Overworld_1")
+        self.player = Player("Danny", 0, 0)
         self.monsters = []
 
         self.main_loop()
@@ -22,6 +22,9 @@ class Game():
         infoObject = pygame.display.Info()
         self.window_size = (infoObject.current_w // 2,
                             infoObject.current_h // 2)
+        
+        self.scale_factor = 4
+        
         self.window = pygame.display.set_mode(
             (self.window_size[0], self.window_size[1]), pygame.SCALED | pygame.RESIZABLE, 32)
         pygame.display.set_caption('Monster Hunter \'86')
@@ -32,7 +35,7 @@ class Game():
     def update(self):
 
         self.map.update()
-        self.player.update()
+        self.player.update(self.map)
         # for monster in self.monsters:
         #     monster.update()
 
@@ -54,9 +57,14 @@ class Game():
 
     def get_surf_point(self):
         return (
-            self.window_size[0]//2 - self.player.get_x(),
-            self.window_size[1]//2 - self.player.get_y()
-        )
+            Utils.limit(
+                self.window_size[0]//2 - self.player.get_x() * self.scale_factor,
+                self.window_size[0] - self.map.get_scaled_pixel_size_tuple(self.scale_factor)[0], 0), 
+            Utils.limit(
+                self.window_size[1]//2 - self.player.get_y() * self.scale_factor,
+                self.window_size[1] - self.map.get_scaled_pixel_size_tuple(self.scale_factor)[1], 0), 
+            )
+        
 
     def main_loop(self):
 
@@ -67,11 +75,13 @@ class Game():
 
             self.update()
             self.draw()
-
+            
+            print(self.get_surf_point())
+            self.window.fill((0,0,0))
             self.window.blit(pygame.transform.scale(
                 self.render_surface,
-                self.map.get_scaled_pixel_size_tuple()
-            ), (0, 0))
+                self.map.get_scaled_pixel_size_tuple(self.scale_factor)
+            ), (self.get_surf_point()))
 
             pygame.display.update()
             self.clock.tick(30)
@@ -96,6 +106,12 @@ class Map():
         for tileset in reversed(self.map_data["tilesets"]):
             self.tilesets.append(
                 (tileset["firstgid"], Tileset(tileset["source"], self.filepath)))
+
+    def get_pixel_width(self):
+        return self.map_data["width"] * self.map_data["tilewidth"]
+
+    def get_pixel_height(self):
+        return self.map_data["height"] * self.map_data["tileheight"]
 
     def load_map(self):
         self.map = []
@@ -150,10 +166,10 @@ class Map():
             self.map_data["height"] * self.map_data["tilewidth"]
         )
 
-    def get_scaled_pixel_size_tuple(self):
+    def get_scaled_pixel_size_tuple(self, scale_factor):
         return (
-            self.map_data["width"] * self.map_data["tilewidth"] * 4,
-            self.map_data["height"] * self.map_data["tilewidth"] * 4
+            self.map_data["width"] * self.map_data["tilewidth"] * scale_factor,
+            self.map_data["height"] * self.map_data["tilewidth"] * scale_factor
         )
 
     def __repr__(self) -> str:
@@ -188,13 +204,16 @@ class Tile():
 
 
 class Character():
-    def __init__(self, name) -> None:
-        self.x = 5
-        self.y = 5
+    def __init__(self, name, x, y) -> None:
+        self.x = x
+        self.y = y
         self.name = name
         self.max_health = 100
         self.health = self.max_health
         self.level = 1
+        self.width = 16
+        self.height = 16
+        self.pixel_move = 1
 
     def get_x(self):
         return self.x
@@ -202,17 +221,20 @@ class Character():
     def get_y(self):
         return self.y
 
-    def move(self, shift):
+    def move(self, shift, map):
         self.x += shift[0]
         self.y += shift[1]
+        
+        self.x = Utils.limit(self.x, 0, map.get_pixel_width() - self.width)
+        self.y = Utils.limit(self.y, 0, map.get_pixel_height() - self.height)
 
-    def update(self):
+    def update(self, map):
         pass
 
     def draw(self, surface):
 
         pygame.draw.rect(surface, pygame.Color(
-            'red'), pygame.Rect(self.x, self.y, 16, 16))
+            'red'), pygame.Rect(self.x, self.y, self.width, self.height))
         # surface.blit(
         #     pygame.Rect(0,0,16,16),
         #     (self.x * 16, self.y * 16)
@@ -224,24 +246,33 @@ class Character():
 
 
 class Player(Character):
-    def __init__(self, name) -> None:
-        super().__init__(name)
+    def __init__(self, name, x, y) -> None:
+        super().__init__(name, x, y)
 
         print(self)
         pass
 
-    def update(self):
-        super().update()
+    def update(self, map):
+        super().update(map)
 
         keys = pygame.key.get_pressed()
+        # if keys[pygame.K_LEFT] and keys[pygame.K_DOWN]:
+        #     self.move((-0.75, 0.75), map)
+        # if keys[pygame.K_LEFT] and keys[pygame.K_UP]:
+        #     self.move((-0.75, -0.75), map)
+        # if keys[pygame.K_RIGHT] and keys[pygame.K_DOWN]:
+        #     self.move((0.75, 0.75), map)
+        # if keys[pygame.K_DOWN] and keys[pygame.K_UP]:
+        #     self.move((0.75, -0.75), map)
         if keys[pygame.K_LEFT]:
-            self.move((-1, 0))
+            self.move((-1, 0), map)
         if keys[pygame.K_RIGHT]:
-            self.move((1, 0))
+            self.move((1, 0), map)
         if keys[pygame.K_UP]:
-            self.move((0, -1))
+            self.move((0, -1), map)
         if keys[pygame.K_DOWN]:
-            self.move((0, 1))
+            self.move((0, 1), map)
+      
 
 
         # if event.type == pygame.KEYDOWN:
@@ -314,6 +345,9 @@ class Utils():
     ASSET_FOLDER = os.path.join(DIRPATH, 'assets/')
     MAPS_FOLDER = os.path.join(ASSET_FOLDER, 'mapping/maps/')
     TILES_FOLDER = os.path.join(ASSET_FOLDER, 'mapping/tilesets/')
+
+    def limit(n, min_n, max_n):
+        return max(min(max_n, n), min_n)
 
 
 game = Game()
