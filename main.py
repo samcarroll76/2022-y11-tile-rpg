@@ -1,6 +1,5 @@
 # v4
-from datetime import datetime
-from threading import local
+
 import pygame
 import os
 import json
@@ -359,8 +358,8 @@ class Character():
 
         pygame.draw.rect(surface, self.unique_colour, self.bounding_rect)
 
-        for collide_block in self._collidelist:
-            pygame.draw.rect(surface, pygame.Color(255,0,0,128), collide_block)
+        # for collide_block in self._collidelist:
+        #     pygame.draw.rect(surface, pygame.Color(255,0,0,128), collide_block)
 
         # surface.blit(
         #     pygame.Rect(0,0,16,16),
@@ -440,10 +439,9 @@ class Monster(Character):
     def __init__(self, name, x, y):
         super().__init__(name, x, y)
         self.movement_speed *= 0.5
-        self.movement_algorithm = "bearing_vector"
-        date_time_obj = datetime.now()
-        time_obj = date_time_obj.time()
-        self.timer = time_obj.second()
+        
+        self.current_vec = pygame.math.Vector2()
+        self.last_dir_change = pygame.time.get_ticks()
 
     def auto_move(self, map, player_loc):
         vec_to_player = pygame.math.Vector2(
@@ -454,34 +452,34 @@ class Monster(Character):
         if vec_to_player.length() <= 1:
             return
 
-        print(vec_to_player, " from ", self.name)
-
         if vec_to_player.length() <= self.sight_range:
             # head toward player
-            if self.movement_algorithm == "bearing_vector":
-                self.move_vector(map, vec_to_player)
+            self.move_vector(map, vec_to_player)
         else:
-            # random movement
+            self.rand_move(map)
             pass
 
     def rand_move(self, map):
+
+        self.move_vector(map, self.current_vec)
+
+        if self.last_dir_change >= pygame.time.get_ticks() - 500:
+            return
+        
+        self.last_dir_change = pygame.time.get_ticks()
+
         possible_dir = [
-            (self.bounding_rect.x - 1, self.bounding_rect.y),
-            (self.bounding_rect.x - 1, self.bounding_rect.y - 1),
-            (self.bounding_rect.x, self.bounding_rect.y - 1),
-            (self.bounding_rect.x + 1, self.bounding_rect.y - 1),
-            (self.bounding_rect.x + 1, self.bounding_rect.y),
-            (self.bounding_rect.x + 1, self.bounding_rect.y + 1),
-            (self.bounding_rect.x, self.bounding_rect.y + 1),
-            (self.bounding_rect.x - 1, self.bounding_rect.y + 1)
+            (-1, -1),
+            (-1, 0),
+            (-1, 1),
+            (0, -1),
+            (0, 1),
+            (1, -1),
+            (1, 0),
+            (1, 1)
         ]
         index = random.randint(0,7)
-        print(index)
-        rand_vec = pygame.math.Vector2(possible_dir[index])
-        if rand_vec.length() <= self.sight_range:
-            self.move_vector(map, rand_vec)
-
-        pass
+        self.current_vec = pygame.math.Vector2(possible_dir[index])
 
 
     def update(self, map, player_loc):
