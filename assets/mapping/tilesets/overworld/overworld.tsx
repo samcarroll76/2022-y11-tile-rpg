@@ -43,12 +43,12 @@
  </tile>
  <tile id="8">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="9">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="10">
@@ -148,12 +148,12 @@
  </tile>
  <tile id="29">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="30">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="31">
@@ -253,12 +253,12 @@
  </tile>
  <tile id="50">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="51">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="52">
@@ -358,12 +358,12 @@
  </tile>
  <tile id="71">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="72">
   <properties>
-   <property name="collide" type="int" value="0"/>
+   <property name="collide" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="73">

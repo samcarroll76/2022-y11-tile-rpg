@@ -87,7 +87,7 @@
                 {
                  "name":"collide",
                  "type":"int",
-                 "value":0
+                 "value":1
                 }]
         }, 
         {
@@ -96,7 +96,7 @@
                 {
                  "name":"collide",
                  "type":"int",
-                 "value":0
+                 "value":1
                 }]
         }, 
         {
@@ -254,7 +254,7 @@
         }, 
         {
          "id":27,
-         "probability":0.0500000007450581,
+         "probability":0.05,
          "properties":[
                 {
                  "name":"collide",
@@ -277,7 +277,7 @@
                 {
                  "name":"collide",
                  "type":"int",
-                 "value":0
+                 "value":1
                 }]
         }, 
         {
@@ -286,7 +286,7 @@
                 {
                  "name":"collide",
                  "type":"int",
-                 "value":0
+                 "value":1
                 }]
         }, 
         {
@@ -466,7 +466,7 @@
                 {
                  "name":"collide",
                  "type":"int",
-                 "value":0
+                 "value":1
                 }]
         }, 
         {
@@ -475,7 +475,7 @@
                 {
                  "name":"collide",
                  "type":"int",
-                 "value":0
+                 "value":1
                 }]
         }, 
         {
@@ -655,7 +655,7 @@
                 {
                  "name":"collide",
                  "type":"int",
-                 "value":0
+                 "value":1
                 }]
         }, 
         {
@@ -664,7 +664,7 @@
                 {
                  "name":"collide",
                  "type":"int",
-                 "value":0
+                 "value":1
                 }]
         }, 
         {
@@ -1344,7 +1344,7 @@
         }, 
         {
          "id":148,
-         "probability":0.300000011920929,
+         "probability":0.3,
          "properties":[
                 {
                  "name":"collide",
@@ -1552,7 +1552,7 @@
         }, 
         {
          "id":171,
-         "probability":0.200000002980232,
+         "probability":0.2,
          "properties":[
                 {
                  "name":"collide",
@@ -1562,7 +1562,7 @@
         }, 
         {
          "id":172,
-         "probability":0.0199999995529652,
+         "probability":0.02,
          "properties":[
                 {
                  "name":"collide",

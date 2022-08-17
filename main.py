@@ -1,4 +1,5 @@
 # v4
+from threading import local
 import pygame
 import os
 import json
@@ -12,10 +13,10 @@ class Game():
 
     def start(self):
         self.map = Map("overworld_1")
-        self.player = Player("Danny", 10, 10)
+        self.player = Player("Danny", 3, 3)
         self.monsters = [
-            Monster("jerry", 150, 100),
-            Monster("jerry2", 100, 150)
+            Monster("jerry", 1, 12.5),
+            Monster("jerry2", 10, 10)
         ]
 
         self.main_loop()
@@ -75,7 +76,6 @@ class Game():
             self.map.get_scaled_pixel_size_tuple(self.scale_factor)
         ), (self.get_surf_point()))
 
-
         if self.player.is_dead():
             self.window.fill((255, 255, 255))
             die_text = Utils.SIZE_40_FONT.render(
@@ -129,6 +129,7 @@ class Map():
         self.name = name
         self.filepath = os.path.join(Utils.MAPS_FOLDER, self.name + ".tmj")
         self.map_data = json.load(open(self.filepath, "r"))
+        self.map = []
 
         self.load_tilesets()
         self.load_map()
@@ -169,12 +170,24 @@ class Map():
 
                     self.map[row][col].add_layer(
                         self.get_tile_surface(map_tile_id), layer_object["name"])
+                    self.map[row][col].add_collide(
+                        self.does_tile_collide(map_tile_id))
 
-    def get_tile_surface(self, map_tile_id):
+    def get_tileset_tuple_local(self, map_tile_id):
         for tileset_tuple in self.tilesets:
             if tileset_tuple[0] <= map_tile_id:
-                local_tile_id = map_tile_id - tileset_tuple[0]
-                return tileset_tuple[1].get_tile_surface(local_tile_id)
+                print(tileset_tuple)
+                return (map_tile_id - tileset_tuple[0], tileset_tuple[1])
+
+    def get_tile_surface(self, map_tile_id):
+        tileset_tuple = self.get_tileset_tuple_local(map_tile_id)
+        if tileset_tuple:
+            return tileset_tuple[1].get_tile_surface(tileset_tuple[0])
+
+    def does_tile_collide(self, map_tile_id):
+        tileset_tuple = self.get_tileset_tuple_local(map_tile_id)
+        if tileset_tuple:
+            return tileset_tuple[1].does_tile_collide(tileset_tuple[0])
 
     def update(self):
         pass
@@ -187,6 +200,27 @@ class Map():
                     self.map_data["tilewidth"],
                     self.map_data["tileheight"]
                 )
+
+    def get_adjacent_collide_list(self, pixel_coords):
+        row = int(pixel_coords[0] / self.map_data["tilewidth"])
+        col = int(pixel_coords[1] / self.map_data["tileheight"])
+
+        collide_list = []
+        calc_range = 3
+        for x_rel in range(-calc_range, calc_range, 1):
+            for y_rel in range(-calc_range, calc_range, 1):
+                x = row + x_rel
+                y = col + y_rel
+                if x >= 0 and x < self.map_data["width"]:
+                    if y >= 0 and y < self.map_data["height"]:
+                        if self.map[y][x].does_collide():
+                            collide_list.append(pygame.Rect(
+                                x * self.map_data["tilewidth"],
+                                y * self.map_data["tileheight"],
+                                self.map_data["tilewidth"],
+                                self.map_data["tileheight"]
+                            ))
+        return collide_list
 
     def get_size_tuple(self):
         return (
@@ -214,6 +248,7 @@ class Tile():
     def __init__(self, row, col) -> None:
         self.row = row
         self.col = col
+        self.collide = False
         self.layers = []
         pass
 
@@ -225,12 +260,18 @@ class Tile():
             (image_surface, layer_name)
         )
 
+    def add_collide(self, collide):
+        self.collide = self.collide or collide
+
     def draw(self, surface, width, height):
         for layer in self.layers:
             surface.blit(
                 layer[0],
                 (self.col * width, self.row * height)
             )
+
+    def does_collide(self):
+        return self.collide
 
     def __repr__(self):
         return "Tile<r{}, c{}, {}l>".format(self.row, self.col, len(self.layers))
@@ -256,30 +297,33 @@ class Character():
     ]
 
     def __init__(self, name, x, y) -> None:
-        self.x = x
-        self.y = y
+        self.size = 10
+        self.bounding_rect = pygame.Rect(
+            x*16, y*16, self.size, self.size)
         self.name = name
         self.max_health = 100
         self.health = self.max_health
         self.level = 1
-        self.width = 16
-        self.height = 16
+        # self.width = 16
+        # self.height = 16
         self.movement_speed = 2
 
-        self.sight_range = 4 * self.width
+        self.sight_range = 4 * self.bounding_rect.w
         self.cooldown_length = 1500
         self.cooldown_timer = 0
         self.weapon_id = 0
 
         self.unique_colour = Utils.get_hexcolor(name + str(x) + str(y))
 
+        self._collidelist = []
+
         print(self)
 
     def get_x(self):
-        return self.x
+        return self.bounding_rect.x
 
     def get_y(self):
-        return self.y
+        return self.bounding_rect.y
 
     def move_vector(self, map, shift_vector):
         if shift_vector.length() <= 0:
@@ -287,34 +331,45 @@ class Character():
 
         shift_vector.scale_to_length(self.movement_speed)
 
-        self.x += shift_vector.x
-        self.y += shift_vector.y
-
-        self.x = round(Utils.limit(
-            self.x, 0, map.get_pixel_width() - self.width), 1)
-        self.y = round(Utils.limit(
-            self.y, 0, map.get_pixel_height() - self.height), 1)
+        new_pos = pygame.Rect(
+            round(Utils.limit(self.bounding_rect.x + shift_vector.x,
+                  0, map.get_pixel_width() - self.bounding_rect.w), 1),
+            round(Utils.limit(self.bounding_rect.y + shift_vector.y,
+                  0, map.get_pixel_height() - self.bounding_rect.h), 1),
+            self.bounding_rect.w,
+            self.bounding_rect.h
+        )
+        if (self.check_valid_move(map, new_pos)):
+            self.bounding_rect = new_pos
 
     def move(self, shift, map):
         self.move_vector(map, pygame.math.Vector2(shift))
 
     def update(self, map):
-        print(self.name, " is at ", self.get_loc())
         pass
+
+    def check_valid_move(self, map, new_pos):
+        self._collidelist = map.get_adjacent_collide_list(new_pos.center)
+        return new_pos.collidelist(
+            self._collidelist
+        ) == -1
 
     def draw(self, surface):
 
-        pygame.draw.rect(surface, self.unique_colour, pygame.Rect(
-            self.x, self.y, self.width, self.height))
+        pygame.draw.rect(surface, self.unique_colour, self.bounding_rect)
+
+        # for collide_block in self._collidelist:
+        #     pygame.draw.rect(surface, Utils.CLR_RED, collide_block)
+
         # surface.blit(
         #     pygame.Rect(0,0,16,16),
-        #     (self.x * 16, self.y * 16)
+        #     (self.bounding_rect.x * 16, self.bounding_rect.y * 16)
         # )
         pass
 
     def distance_to(self, other):
-        dist_x = self.x - other.x
-        dist_y = self.y - other.y
+        dist_x = self.bounding_rect.x - other.bounding_rect.x
+        dist_y = self.bounding_rect.y - other.bounding_rect.y
         return (dist_x ^ 2, dist_y ^ 2) ^ 0.5
 
     def start_cooldown():
@@ -329,13 +384,16 @@ class Character():
         return self.WEAPON_LIST[self.weapon_id]
 
     def get_loc(self):
-        return (self.x, self.y)
+        return (self.bounding_rect.x, self.bounding_rect.y)
+
+    def get_centre(self):
+        return (self.bounding_rect.x + self.bounding_rect.w // 2, self.bounding_rect.y + self.bounding_rect.h//2)
 
     def attack_nearest(self):
         pass
 
     def attack(self, target):
-        if self.distance_to(target) <= self.width*2:
+        if self.distance_to(target) <= self.bounding_rect.w*2:
             if self.cooldown_expired():
                 target.take_damage(target, (self.get_weapon().get_damage()))
 
@@ -385,8 +443,8 @@ class Monster(Character):
 
     def auto_move(self, map, player_loc):
         vec_to_player = pygame.math.Vector2(
-            player_loc[0] - self.x,
-            player_loc[1] - self.y
+            player_loc[0] - self.bounding_rect.x,
+            player_loc[1] - self.bounding_rect.y
         )
 
         if vec_to_player.length() <= 1:
@@ -433,7 +491,7 @@ class Tileset():
             if not added_collide:
                 self.tile_collisions.append(0)
 
-    def get_tile_rect(self, local_tile_id):
+    def get_tile_slice_rect(self, local_tile_id):
         return pygame.Rect(
             (local_tile_id %
              self.tileset_data["columns"]) * self.tileset_data["tilewidth"],
@@ -444,7 +502,7 @@ class Tileset():
         )
 
     def get_tile_surface(self, local_tile_id):
-        tile_slice = self.get_tile_rect(local_tile_id)
+        tile_slice = self.get_tile_slice_rect(local_tile_id)
         # From https://www.pygame.org/wiki/Spritesheet
         rect = pygame.Rect(tile_slice)
         image = pygame.Surface(rect.size, pygame.SRCALPHA, 32).convert_alpha()
@@ -454,6 +512,9 @@ class Tileset():
         #         colorkey = image.get_at((0,0))
         #     image.set_colorkey(colorkey, pygame.RLEACCEL)
         return image
+
+    def does_tile_collide(self, local_tile_id):
+        return self.tile_collisions[local_tile_id]
 
     def __repr__(self):
         return type(self).__name__ + "<{}, {}>".format(os.path.basename(self.filepath), os.path.basename(self.sheetpath))
