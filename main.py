@@ -1,9 +1,6 @@
 # v4
 
-# Stuff to add
-# - Items available for pickup on ground(weapons, powerups)
-# - Sprites for the players and enemies
-# - Player customisation
+# Final Commit
 
 from curses import COLOR_WHITE
 import pygame
